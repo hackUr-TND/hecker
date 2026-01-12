@@ -70,7 +70,16 @@
 
     <script>
         const WORKER_BASE = "https://sailorboom.tndisbest.workers.dev/";
+            function generateRandomEmail(domain) {
+                // Generate a random string using Math.random() and base 36 encoding (0-9, a-z)
+                const randomString = Math.random().toString(36).substring(2, 10);
 
+                // Combine the random string with the domain
+                const email = `${randomString}@${domain}`;
+
+                return email;
+            }
+        
         function appendMessage(text, type = "info") {
             const messageBox = document.getElementById("message");
             const p = document.createElement("div");
