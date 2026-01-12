@@ -108,9 +108,9 @@
 
                 const data = await response.json();
 
-                if (response.status === 422 || data ? .errors) {
+                if (response.status === 422 || data?.errors) {
                     appendMessage(
-                        data ? .message || "Invalid phone number or account not found.",
+                        data?.message || "Invalid phone number or account not found.",
                         "error"
                     );
                     return;
@@ -191,7 +191,7 @@
 
                 const data = await response.json();
 
-                if (response.status === 422 || data ? .errors ? .phone) {
+                if (response.status === 422 || data?.errors?.phone) {
                     appendMessage("This phone number is already registered.", "error");
                     appendMessage("Trying forgot", "info")
 
